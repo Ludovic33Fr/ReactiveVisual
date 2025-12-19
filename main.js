@@ -196,7 +196,7 @@ function createVisualizerObjects() {
                     // Texture coordinates (0 to 1)
                     // La video texture est souvent inversée ou besoin d'ajustement selon UV
                     uvs[index * 2] = x / width;
-                    uvs[index * 2 + 1] = 1.0 - (y / height); // Inverser Y souvent nécessaire
+                    uvs[index * 2 + 1] = y / height; // Correction: Ne pas inverser si c'était à l'envers
 
                     index++;
                 }
