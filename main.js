@@ -25,6 +25,25 @@ document.getElementById('style-selector').addEventListener('change', (e) => {
     }
 });
 
+document.getElementById('fullscreen-btn').addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+        document.body.requestFullscreen().catch(err => {
+            alert(`Erreur: ${err.message} (${err.name})`);
+        });
+    } else {
+        document.exitFullscreen();
+    }
+});
+
+document.addEventListener('fullscreenchange', () => {
+    const uiContainer = document.getElementById('ui-container');
+    if (document.fullscreenElement) {
+        uiContainer.style.display = 'none';
+    } else {
+        uiContainer.style.display = 'flex';
+    }
+});
+
 async function setupWebcam() {
     if (!video) {
         video = document.createElement('video');
