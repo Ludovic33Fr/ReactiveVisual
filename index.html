@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Visualisation Audio Three.js</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* Style pour masquer le bouton ou le rendre minimal */
+        #audio-trigger {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 30px;
+            font-size: 1.2em;
+            cursor: pointer;
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="ui-container"
+        style="position: absolute; top: 10px; right: 10px; z-index: 100; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px;">
+        <label for="style-selector" style="color: white; font-family: sans-serif;">Style : </label>
+        <select id="style-selector">
+            <option value="simple">Simple Sphère</option>
+            <option value="chaotic">Sphère Chaotique</option>
+            <option value="particles">Particules</option>
+            <option value="webcam">Particules Webcam</option>
+        </select>
+    </div>
+    <button id="audio-trigger">Démarrer la Visualisation (Cliquez)</button>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="main.js"></script>
+</body>
+
+</html>
