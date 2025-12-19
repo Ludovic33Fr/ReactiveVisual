@@ -187,10 +187,7 @@ function createVisualizerObjects() {
     }
     else if (currentVisualizer === 'webcam') {
         setupWebcam().then(() => {
-            // Système de particules pour la webcam
-            // On crée une grille de points qui correspondra aux pixels de la vidéo
-            // Pour 640x480 c'est beaucoup (300k points), on va réduire un peu ou prendre 1 point sur 4
-
+            // ... (existing webcam code)
             const width = 160; // Résolution de la grille (plus faible que la vidéo pour perf)
             const height = 120;
 
@@ -203,19 +200,16 @@ function createVisualizerObjects() {
             let index = 0;
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
-                    // Position centrée
                     const posX = (x / width - 0.5) * 50;
-                    const posY = (y / height - 0.5) * 50 * (height / width); // Aspect ratio
+                    const posY = (y / height - 0.5) * 50 * (height / width);
                     const posZ = 0;
 
                     positions[index * 3] = posX;
                     positions[index * 3 + 1] = posY;
                     positions[index * 3 + 2] = posZ;
 
-                    // Texture coordinates (0 to 1)
-                    // La video texture est souvent inversée ou besoin d'ajustement selon UV
                     uvs[index * 2] = x / width;
-                    uvs[index * 2 + 1] = y / height; // Correction: Ne pas inverser si c'était à l'envers
+                    uvs[index * 2 + 1] = y / height;
 
                     index++;
                 }
@@ -224,7 +218,6 @@ function createVisualizerObjects() {
             particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             particlesGeometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
 
-            // Shader Material
             webcamMaterial = new THREE.ShaderMaterial({
                 uniforms: {
                     uTexture: { value: videoTexture },
@@ -239,48 +232,56 @@ function createVisualizerObjects() {
                     
                     void main() {
                         vColor = texture2D(uTexture, uv).rgb;
-                        
-                        // Calculer la luminance
                         float luminance = dot(vColor, vec3(0.299, 0.587, 0.114));
-                        
                         vec3 pos = position;
-                        
-                        // Deplacement en Z basé sur luminance et bass
                         pos.z += luminance * 10.0 * (uBass + 0.2);
-                        
-                        // Effet de vague si on veut
-                        // pos.z += sin(pos.x * 0.5 + uTime) * uBass * 2.0;
-                        
                         vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-                        
-                        // Taille des points dépend de la profondeur et des basses
                         gl_PointSize = (2.0 + uBass * 5.0) * (30.0 / -mvPosition.z);
-                        
                         gl_Position = projectionMatrix * mvPosition;
                     }
                 `,
                 fragmentShader: `
                     varying vec3 vColor;
-                    
                     void main() {
-                        // Cercle doux pour les particules
                         vec2 coord = gl_PointCoord - vec2(0.5);
                         if(length(coord) > 0.5) discard;
-                        
                         gl_FragColor = vec4(vColor, 1.0);
                     }
                 `,
                 transparent: true,
-                depthWrite: false, // Pour éviter des artefacts de transparence
-                blending: THREE.AdditiveBlending // Pour un look lumineux
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
             });
 
             particles = new THREE.Points(particlesGeometry, webcamMaterial);
             scene.add(particles);
-
-            // Ajuster la caméra pour bien voir le plan
-            // camera.position.set(0, 0, 40);
         });
+    }
+    else if (currentVisualizer === 'waveform') {
+        // Waveform line
+        // On utilise beaucoup de points pour une ligne fluide
+        const segments = 512;
+        const lineGeometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(segments * 3);
+
+        // Initialiser une ligne plate centrée
+        for (let i = 0; i < segments; i++) {
+            // x va de -20 à +20
+            const x = (i / (segments - 1) - 0.5) * 40;
+            positions[i * 3] = x;
+            positions[i * 3 + 1] = 0;
+            positions[i * 3 + 2] = 0;
+        }
+
+        lineGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        const lineMaterial = new THREE.LineBasicMaterial({
+            color: 0x00ff00,
+            linewidth: 2 // Note: linewidth ne marche pas toujours sur WebGL
+        });
+
+        mesh = new THREE.Line(lineGeometry, lineMaterial);
+        scene.add(mesh);
     }
 }
 
@@ -376,6 +377,31 @@ function animate() {
             if (video && video.readyState >= video.HAVE_CURRENT_DATA) {
                 if (videoTexture) videoTexture.needsUpdate = true;
             }
+        }
+    }
+    else if (currentVisualizer === 'waveform') {
+        if (mesh && mesh.isLine) { // Verify it's indeed the line
+            const positions = mesh.geometry.attributes.position.array;
+            // dataArray length is 512 normally
+
+            for (let i = 0; i < positions.length / 3; i++) {
+                // Utiliser le signal temporel si on l'avait (getByteTimeDomainData)
+                // Mais ici on a getByteFrequencyData dans dataArray.
+                // On peut simuler une waveform ou afficher le spectre.
+
+                // Pour un effet waveform (oscilloscope), il faudrait TimeDomainData.
+                // Si on veut juste voir les fréquences style EQ :
+
+                const val = dataArray[i] || 0;
+                const normalized = val / 255.0;
+
+                // Y position based on frequency amplitude
+                positions[i * 3 + 1] = normalized * 10;
+            }
+            mesh.geometry.attributes.position.needsUpdate = true;
+
+            // Rotation légère pour le style
+            // mesh.rotation.x = Math.sin(Date.now() * 0.001) * 0.2;
         }
     }
 
